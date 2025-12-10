@@ -1,11 +1,23 @@
 {
-  "name": "my-electron-app",
+  "name": "my-background-remover",
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "python-build": "pyinstaller --noconfirm --onefile --console --distpath dist app.py",
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.example.bgremover",
+    "win": {
+      "target": "nsis"
+    },
+    "extraResources": [
+      "dist/app.exe"
+    ]
   },
   "devDependencies": {
-    "electron": "^39.2.6"
+    "electron": "^39.2.6",
+    "electron-builder": "^26.0.12"
   }
 }

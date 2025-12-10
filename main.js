@@ -1,20 +1,71 @@
-// main.js
 const { app, BrowserWindow } = require('electron')
+const path = require('path')
+const { spawn, execSync } = require('child_process') // 1. 프로세스 실행 도구 불러오기
+
+let mainWindow
+let pyProc = null
+
+// 2. 파이썬 서버 실행 함수
+function createPyProc() {
+  if (pyProc != null) {
+    console.log('python server is already running')
+    return
+  }
+
+  let script = path.join(__dirname, 'dist/app.exe') // 같은 폴더에 있는 app.exe 경로
+  
+  // 개발 모드일 때와 배포 모드일 때 경로가 조금 다릅니다. (일단은 배포 기준 단순화)
+  console.log("start python server : " + script)
+  
+  pyProc = spawn(script) // 실행!
+
+  if (pyProc != null) {
+    console.log('python server started successfully. PID: ' + pyProc.pid)
+  }
+}
+
+// 3. 파이썬 서버 종료 함수 (앱 끌 때 같이 꺼야 함)
+function exitPyProc() {
+  if (pyProc != null) {
+    console.log('Killing python server...')
+    if (process.platform === 'win32') {
+      try {
+        execSync('taskkill /pid ' + pyProc.pid + ' /T /F')
+        console.log('Python server killed successfully')
+      } catch (e) {
+        console.log('Failed to kill python server (maybe already dead): ' + e.message)
+      }
+    } else {
+      pyProc.kill()
+    }
+    pyProc = null
+    console.log('python server exited')
+  }
+}
 
 function createWindow () {
-  // 1. 브라우저 창 생성
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
-      nodeIntegration: true, // html에서 node 기능(require 등)을 쓸 수 있게 허용
-      contextIsolation: false // 초보자용 설정 (보안상 나중엔 끄는 게 좋음)
+      nodeIntegration: true,
+      contextIsolation: false
     }
   })
-
-  // 2. 아까 만든 html 파일 로드
-  win.loadFile('index.html')
+  mainWindow.loadFile('index.html')
 }
 
-// 앱이 준비되면 창을 띄운다
-app.whenReady().then(createWindow)
+// 앱이 준비되면
+app.whenReady().then(() => {
+  createPyProc() // 파이썬 켜고
+  createWindow() // 창 띄운다
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+// 앱이 종료될 때
+app.on('will-quit', exitPyProc) // 파이썬도 같이 끈다
