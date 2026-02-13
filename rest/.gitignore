@@ -1,0 +1,7 @@
+# Shared rest app env/log artifacts
+.env
+.env.*
+!.env.example
+
+*.log
+*.pid
